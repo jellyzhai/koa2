@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>登录</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <h1>登录</h1>
+
+    <div>
+        <div>用户名：<input type="text" id="username" /></div>
+        <div>密码：<input type="password" id="password" /></div>
+        <div>
+            <button id="postLogin">登录</button>
+        </div>
+    </div>
+
+    <script>
+        const usernameDom = document.querySelector("#username");
+        const passwordDom = document.querySelector("#password");
+        const postLoginDom = document.querySelector("#postLogin");
+
+        postLoginDom.onclick = () => {
+            axios
+                .post("/api/login", {
+                    username: usernameDom.value,
+                    password: passwordDom.value,
+                })
+                .then((res) => {
+                    if (res.data.ok === 1) {
+                        location.assign('/home');
+                    } else {
+                        alert("用户名或密码不存在");
+                    }
+                })
+                .catch(err => {
+                    alert('登录失败')
+                    console.log(err);
+                });
+        };
+    </script>
+</body>
+
+</html>
