@@ -1,6 +1,10 @@
+const path = require("path");
 const Koa = require('koa')
+const static = require('koa-static')
 
 const app = new Koa()
+
+app.use(static(path.join(__dirname, 'public')))
 
 /*
     ctx: context 上下文，里面聚合了request 和 response 对象
