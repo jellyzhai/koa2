@@ -31,11 +31,7 @@
                 })
                 .then((res) => {
                     if (res.data.ok === 1) {
-                        const token = res.headers.authorization
-                        console.log('axios response: ', res);
-
-                        localStorage.setItem('authorization', token)
-                        location.assign('/home.html');
+                        location.assign('/home');
                     } else {
                         alert("用户名或密码不存在");
                     }

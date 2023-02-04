@@ -4,6 +4,7 @@ const router = new Router();
 
 router
   .post("/", (ctx, next) => {
+    console.log(ctx.params);
     ctx.body = ctx.request;
   })
   .get("/", (ctx, next) => {

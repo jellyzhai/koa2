@@ -3,6 +3,7 @@ const loginPageRouter = require("./loginPage");
 const loginRouter = require("./login");
 const listRouter = require("./list");
 const userRouter = require("./user");
+const homeRouter = require("./home");
 
 const router = new Router();
 
@@ -12,7 +13,8 @@ router
   .redirect("/", "/login")
   .use("/login", loginPageRouter.routes())
   .use("/api/login", loginRouter.routes())
-  .use("/api/user", userRouter.routes())
+  .use("/user", userRouter.routes())
   .use("/list", listRouter.routes())
+  .use("/home", homeRouter.routes())
 
 module.exports = router

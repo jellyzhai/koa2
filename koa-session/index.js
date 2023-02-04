@@ -9,7 +9,6 @@ const session = require('koa-session-minimal')
 const views = require("koa-views");
 
 const routerAll = require("./routers");
-const JWT = require("./utils/jwt");
 
 const router = new Router();
 const app = new Koa()
@@ -34,34 +33,17 @@ app.use(session({
   }
 }));
 
-// 通过 token 信息，统一判断登录状态
+// 通过session 信息，统一判断登录状态
 // 调用 next 时，需要等待 next 返回的promise 执行完成后，再继续执行当前函数
 app.use(async (ctx, next) => {
   if (ctx.url.includes('login')) {
     await next();
     return
   }
-
-  const token = ctx.headers.authorization
-
-  if (token) {
-    // 判断 token 是否过期，或是否能正确解析出数据
-    const decryptData = JWT.verify(token)
-    if (decryptData) {
-      const newToken = JWT.generate(
-        {
-          username: decryptData.username,
-          password: decryptData.password,
-        },
-        "10s"
-      );
-
-      ctx.set("authorization", newToken);
-      await next();
-    } else {
-      ctx.status = 401;
-      ctx.body = {ok: 0};
-    }
+  if (ctx.session.user) {
+    // 给当前用户的 session 对象 添加任何数据，都会重新计算 cookie 的过期时间，再保证一个初始的过期时间
+    ctx.session.date = Date.now()
+    await next();
   } else {
     ctx.redirect('/login')
   }
