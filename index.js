@@ -3,6 +3,8 @@ const Koa = require('koa')
 const static = require('koa-static')
 const Router = require("koa-router");
 const bodyParser = require('koa-bodyparser')
+// 实现后端渲染
+const views = require("koa-views");
 
 const routerAll = require("./routers");
 
@@ -14,6 +16,9 @@ app.use(static(path.join(__dirname, 'public')))
 
 // 使 ctx.request.body 中可获取 请求体
 app.use(bodyParser());
+
+// 配置模板引擎
+app.use(views(path.join(__dirname, "views"), {extension: 'ejs'}));
 
 // 配置路由
 router.use(routerAll.routes());
