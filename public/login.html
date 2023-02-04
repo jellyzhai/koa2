@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>登录</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <h1>登录</h1>
+
+    <div>
+        <div>用户名：<input type="text" id="username" /></div>
+        <div>密码：<input type="password" id="password" /></div>
+        <div>
+            <button id="getLogin">get登录</button>
+            <button id="postLogin">post登录</button>
+        </div>
+    </div>
+
+    <script>
+        const usernameDom = document.querySelector("#username");
+        const passwordDom = document.querySelector("#password");
+        const getLogin = document.querySelector("#getLogin");
+        const postLoginDom = document.querySelector("#postLogin");
+
+        getLogin.onclick = () => {
+            axios
+                .get(`/login?username=${usernameDom.value}&password=${passwordDom.value}`)
+                .then((res) => {
+                    if (res.data.ok === 1) {
+                        console.log('登录成功');
+                    } else {
+                        alert("用户名或密码不存在");
+                    }
+                })
+                .catch(err => {
+                    alert('登录失败')
+                    console.log(err);
+                });
+        };
+
+        postLoginDom.onclick = () => {
+            axios
+                .post("/login", {
+                    username: usernameDom.value,
+                    password: passwordDom.value,
+                })
+                .then((res) => {
+                    if (res.data.ok === 1) {
+                        console.log('登录成功');
+                    } else {
+                        alert("用户名或密码不存在");
+                    }
+                })
+                .catch(err => {
+                    alert('登录失败')
+                    console.log(err);
+                });
+        };
+    </script>
+</body>
+
+</html>
