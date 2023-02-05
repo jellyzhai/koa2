@@ -5,6 +5,9 @@ const Router = require("koa-router");
 const bodyParser = require('koa-bodyparser')
 const session = require('koa-session-minimal')
 
+// 连接 mongo 数据库
+require('./mongo_db_config/db_config')
+
 // 实现后端渲染
 const views = require("koa-views");
 
@@ -53,7 +56,7 @@ app.use(async (ctx, next) => {
           username: decryptData.username,
           password: decryptData.password,
         },
-        "10s"
+        "1d"
       );
 
       ctx.set("authorization", newToken);

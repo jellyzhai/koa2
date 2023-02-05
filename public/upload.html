@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>添加用户</title>
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+    <script>
+        axios.interceptors.request.use(
+            function (config) {
+                const token = localStorage.getItem("authorization");
+
+                if (token) {
+                    config.headers.authorization = token;
+                }
+
+                return config;
+            },
+            function (error) {
+                return Promise.reject(error);
+            }
+        );
+    </script>
+</head>
+
+<body>
+    <h2>
+        <button id="logout">退出</button>
+
+        <script>
+            const logoutDom = document.querySelector('#logout')
+
+            logoutDom.onclick = () => {
+                localStorage.removeItem('authorization')
+                alert('退出成功！')
+                location.assign('/login')
+            }
+        </script>
+    </h2>
+    <h2>添加用户</h2>
+
+    <div>
+        <form name="addUser">
+            <div>用户名：<input type="text" name="username" id="username" /></div>
+            <div>密码：<input type="password" name="password" id="password" /></div>
+            <div>年龄：<input type="number" name="age" id="age" /></div>
+            <div>头像：<input type="file" name="avatar" id="avatar" /></div>
+        </form>
+
+        <div><button id="add">添加用户</button></div>
+    </div>
+
+    <script>
+        // const usernameDom = document.querySelector("#username");
+        // const passwordDom = document.querySelector("#password");
+        // const ageDom = document.querySelector("#age");
+        // const avatarDom = document.querySelector("#avatar");
+
+        const addUserDom = document.querySelector("#add");
+
+
+        addUserDom.onclick = () => {
+            // 自动会按照 表单项 name 属性值，作为 key，表单项value 作为值
+            const formData = new FormData(document.forms.addUser)
+
+            // 使用上面方式代替
+            // formData.append('username', usernameDom.value)
+            // formData.append('password', passwordDom.value)
+            // formData.append('age', ageDom.value)
+            // formData.append('avatar', avatarDom.files[0])
+
+            axios
+                .post("/api/upload", formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                })
+                .then((res) => {
+                    if (res.data.ok === 1) {
+                        location.assign("/home.html");
+                    } else if (res.data.ok === 401) {
+                        alert("登录状态已失效，请重新登录");
+                        location.assign("/login");
+                    }
+                })
+                .catch((err) => {
+                    if (+err.response.status === 401) {
+                        alert("登录状态已失效，请重新登录");
+                        location.assign("/login");
+                    } else {
+                        alert('添加用户失败')
+                    }
+                });
+        };
+    </script>
+</body>
+
+</html>

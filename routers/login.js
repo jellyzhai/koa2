@@ -15,7 +15,7 @@ router.post('/', (ctx, next) => {
   const { username, password } = ctx.request.body;
 
   if (username === "jelly" && password === "123") {
-    const token = JWT.generate({ username, password }, "10s");
+    const token = JWT.generate({ username, password }, "1d");
 
     ctx.set("authorization", token);
     ctx.body = { ok: 1 };

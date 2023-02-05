@@ -1,3 +1,6 @@
+# dbs
+mongoDB/*
+
 # Logs
 logs
 *.log
