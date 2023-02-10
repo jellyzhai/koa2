@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>注册用户</title>
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+    <script>
+        axios.interceptors.request.use(
+            function (config) {
+                const token = localStorage.getItem("authorization");
+
+                if (token) {
+                    config.headers.authorization = token;
+                }
+
+                return config;
+            },
+            function (error) {
+                return Promise.reject(error);
+            }
+        );
+        axios.interceptors.response.use(
+                function (res) {
+                    if (res.data.code === 0) {
+                        return Promise.reject(res.data.data);
+                    }
+
+                    return res;
+                },
+                function (error) {
+                    return Promise.reject(error);
+                }
+            );
+    </script>
+</head>
+
+<body>
+    <h2>注册用户</h2>
+
+    <div>
+        <form name="registryUser">
+            <div>用户名：<input type="text" name="username" id="username" /></div>
+            <div>密码：<input type="password" name="password" id="password" /></div>
+            <div>年龄：<input type="number" name="age" id="age" /></div>
+            <div>班级：<input type="number" name="classes" id="classes" /></div>
+            <div>头像：<input type="file" name="avatar" id="avatar" /></div>
+        </form>
+
+        <div><button id="add">注册用户</button></div>
+    </div>
+
+    <script>
+        // const usernameDom = document.querySelector("#username");
+        // const passwordDom = document.querySelector("#password");
+        // const ageDom = document.querySelector("#age");
+        // const classesDom = document.querySelector("#classes");
+        // const avatarDom = document.querySelector("#avatar");
+
+        const addUserDom = document.querySelector("#add");
+
+
+        addUserDom.onclick = () => {
+            // 自动会按照 表单项 name 属性值，作为 key，表单项value 作为值
+            const formData = new FormData(document.forms.registryUser)
+
+            // 使用上面方式代替
+            // formData.append('username', usernameDom.value)
+            // formData.append('password', passwordDom.value)
+            // formData.append('age', ageDom.value)
+            // formData.append('avatar', avatarDom.files[0])
+
+            axios
+                .post("/api/registry", formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                })
+                .then((res) => {
+                    if (res.data.code === 1) {
+                        localStorage.setItem('register', JSON.stringify(res.data.data))
+                        localStorage.setItem('authorization', res.headers.authorization)
+                        location.assign("/user_list.html");
+                    }
+                })
+                .catch((err) => {
+                    alert(`注册用户失败: ${err.message}`)
+                });
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>用户列表</title>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+
+        caption {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid;
+        }
+
+        /* modal */
+        .modal-box {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% + 30px);
+            background-color: black;
+            opacity: 0.6;
+            display: none;
+        }
+
+        .form-box {
+            display: none;
+            position: absolute;
+            width: 500px;
+            padding: 20px;
+            top: 50%;
+            left: 50%;
+            background-color: white;
+            transform: translateX(-50%) translateY(-50%);
+        }
+
+        /* modal */
+    </style>
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+    <script>
+        axios.interceptors.request.use(
+            function (config) {
+                const token = localStorage.getItem("authorization");
+
+                if (token) {
+                    config.headers.authorization = token;
+                }
+
+                return config;
+            },
+            function (error) {
+                return Promise.reject(error);
+            }
+        );
+
+        axios.interceptors.response.use(
+            function (res) {
+                const { authorization } = res.headers;
+
+                if (authorization) {
+                    localStorage.setItem("authorization", authorization);
+                }
+
+                if (res.data.code === 401) {
+                    alert("登录状态已失效，请重新登录");
+                    location.assign("/login");
+                }
+
+                if (res.data.code !== 1) {
+                    return Promise.reject(res.data.data)
+                }
+
+                return res;
+            },
+            function (error) {
+                return Promise.reject(error);
+            }
+        );
+    </script>
+</head>
+
+<body>
+    <h1>
+        欢迎，<span id="username"></span>
+        <script>
+            const register = JSON.parse(localStorage.getItem("register") || "{}");
+            const name = register.username || "回来";
+
+            document.querySelector("#username").innerHTML = name;
+        </script>
+    </h1>
+    <h2>
+        <button id="logout">退出</button>
+
+        <script>
+            const logoutDom = document.querySelector("#logout");
+
+            logoutDom.onclick = () => {
+                localStorage.removeItem("authorization");
+                alert("退出成功！");
+                location.assign("/login");
+            };
+        </script>
+    </h2>
+
+    <table>
+        <caption id="table-tile">
+            学生列表
+        </caption>
+        <thead>
+            <th>用户名</th>
+            <th>密码</th>
+            <th>年龄</th>
+            <th>班级</th>
+            <th>语文</th>
+            <th>数学</th>
+            <th>英语</th>
+            <th>头像</th>
+            <th>操作</th>
+        </thead>
+
+        <tbody id="tbodyDom"></tbody>
+    </table>
+
+    <div id="footerTools">
+        页数：
+        <input type="number" style="width: 50px" min="1" placeholder="请输入查询的页数" value="1" disabled id="pageNum"
+            onchange="pageNumChange(this)" />
+
+        每页显示条数：
+        <select id="limitCount" style="width: max-content" onchange="limitCountChange(this)">
+            <option disabled>请选择每页展示数量</option>
+            <option value="Infinity" selected>Infinity</option>
+            <option value="2">2</option>
+            <option value="4">4</option>
+            <option value="6">6</option>
+        </select>
+    </div>
+
+    <div class="modal-box"></div>
+    <div class="form-box">
+        <h3>更新</h3>
+
+        <div class="form-items-box">
+            <form name="registryUser">
+                <div>用户名：<input type="text" name="username" id="username" /></div>
+                <div>
+                    密码：<input type="password" name="password" id="password" />
+                </div>
+                <div>年龄：<input type="number" name="age" id="age" /></div>
+                <div>班级：<input type="number" name="classes" id="classes" /></div>
+                <div>头像：<input type="file" name="avatar" id="avatar" /></div>
+            </form>
+
+            <div>
+                <button id="cancel" onclick="cancelUpdate()">取消</button>
+                <button id="confirm" onclick="confirmUpdate()">确认</button>
+            </div>
+        </div>
+
+        <script>
+            function cancelUpdate() {
+                openModal(false);
+                formBox.querySelector("form").reset();
+            }
+
+            function confirmUpdate() {
+                // 自动会按照 表单项 name 属性值，作为 key，表单项value 作为值
+                const formData = new FormData(document.forms.registryUser);
+
+                axios
+                    .put(`/api/user/${updatedID}`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })
+                    .then((res) => {
+                        if (res.data.code === 1) {
+                            localStorage.setItem(
+                                "authorization",
+                                res.headers.authorization
+                            );
+                            location.assign("/user_list.html");
+                        }
+                    })
+                    .catch((err) => {
+                        alert(`更新用户失败: ${err.message}`);
+                    });
+            }
+        </script>
+    </div>
+
+    <script>
+        let pageNum = 1,
+            limitCount = Infinity;
+
+        var updatedID = "";
+        var updatedName = "";
+        var userData = [];
+
+        const tbodyDom = document.querySelector("#tbodyDom");
+        const footerTools = document.querySelector("#footerTools");
+        const modalBox = document.querySelector(".modal-box");
+        const formBox = document.querySelector(".form-box");
+        const formEle = formBox.querySelector("form");
+
+        getUsers(pageNum, limitCount);
+
+        function getUsers(pageNum, limitCount) {
+            tbodyDom.innerHTML = `<tr> <td colspan="90">加载中...</td> </tr > `;
+
+            axios
+                .get(`/api/user?pageNum=${pageNum}&limitCount=${limitCount}`)
+                .then((res) => {
+                    localStorage.setItem("axios_response", JSON.stringify(res));
+                    userData = res.data.data || [];
+
+                    let fragment = userData
+                        .map(
+                            (item) => `
+                        <tr>
+                            <td>${item.username}</td>
+                            <td>${item.password}</td>
+                            <td>${item.age}</td>
+                            <td>${item.classes}</td>
+                            <td>${item.chinese}</td>
+                            <td>${item.math}</td>
+                            <td>${item.english}</td>
+                            <td><img src='${item.avatar}' width='60px' /></td>
+                            <td>
+                                <button data-id="${item.id}" data-username="${item.username}"
+                                    onclick="update(this)">更新</button>
+                                <button data-id="${item.id}" data-avatar="${item.avatar}" data-username="${item.username}"
+                                    onclick="deleteFun(this)">删除</button>
+                            </td>
+                        </tr>
+                    `
+                        )
+                        .join("");
+
+                    if (!userData.length) {
+                        fragment = `<tr> <td colspan="90">暂无数据</td> </tr > `;
+                    }
+
+                    tbodyDom.innerHTML = fragment;
+                })
+                .catch((err) => {
+                    alert(`获取用户列表失败: ${err.message}`);
+                    tbodyDom.innerHTML = `<tr> <td colspan="90">暂无数据</td> </tr > `;
+                });
+        }
+
+        function openModal(isOpen) {
+            if (isOpen) {
+                document.body.style.overflow = "hidden";
+                modalBox.style.display = "block";
+                formBox.style.display = "block";
+            } else {
+                document.body.style.overflow = "auto";
+                modalBox.style.display = "none";
+                formBox.style.display = "none";
+            }
+        }
+
+        function update(btn) {
+            openModal(true);
+            updatedID = btn.dataset.id;
+            updatedName = btn.dataset.username;
+            var updatedData = userData.find(item => +item.id === +updatedID);
+
+            formEle.username.value = updatedData.username;
+            formEle.password.value = updatedData.password;
+            formEle.age.value = updatedData.age;
+            formEle.classes.value = updatedData.classes;
+        }
+
+        function deleteFun(btn) {
+            const username = btn.dataset.username;
+            const avatar = btn.dataset.avatar;
+
+            const registerJson = localStorage.getItem('register') || '{}'
+            const registerInfo = JSON.parse(registerJson)
+
+            if (registerInfo.id == btn.dataset.id) {
+                alert('不能删除当前用户！')
+                return
+            }
+
+            const confirmDelete = confirm(`确认删除 ${username}？`);
+
+            if (!confirmDelete) {
+                return;
+            }
+
+            axios
+                .delete(`/api/user/${btn.dataset.id}?avatar=${avatar}`)
+                .then((res) => {
+                    alert(`${username} 删除成功。`);
+                    getUsers(pageNum, limitCount);
+                })
+                .catch((error) => {
+                    alert(`${username} 删除失败: ${err.message}`);
+                });
+        }
+
+        function pageNumChange(pageNumDom) {
+            pageNum = pageNumDom.value;
+            const selectDom = document.querySelector("#limitCount");
+            limitCount = selectDom.value;
+
+            if (+pageNum !== 1) {
+                selectDom.querySelectorAll("option").forEach((ele) => {
+                    if (ele.textContent === "Infinity") {
+                        ele.setAttribute("disabled", true);
+                    } else {
+                        ele.removeAttribute("disabled");
+                    }
+                });
+            } else {
+                selectDom.querySelectorAll("option").forEach((ele) => {
+                    if (ele.textContent === "Infinity") {
+                        ele.removeAttribute("disabled");
+                    }
+                });
+            }
+
+            getUsers(pageNum, limitCount);
+        }
+
+        function limitCountChange(selectDom) {
+            limitCount = selectDom.value;
+            const pageDom = document.querySelector("#pageNum");
+            pageNum = pageDom.value;
+
+            if (+limitCount !== Infinity) {
+                pageDom.removeAttribute("disabled");
+            } else {
+                pageDom.setAttribute("disabled", true);
+            }
+
+            getUsers(pageNum, limitCount);
+        }
+    </script>
+</body>
+
+</html>

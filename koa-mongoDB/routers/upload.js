@@ -1,6 +1,6 @@
 const Router = require("koa-router");
 const multer = require('@koa/multer');
-const UserModel = require("../mongo_db_model/model");
+const UserModel = require("../model/model");
 
 const router = new Router();
 // 设置上传文件存储的位置
