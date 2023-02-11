@@ -1,9 +1,10 @@
 const Router = require("koa-router");
 const JWT = require("../utils/jwt");
+const UserModel = require('../model/model');
 
 const router = new Router();
 
-router.post('/', (ctx, next) => {
+router.post("/", async (ctx, next) => {
   /*
   使用 koa-bodyparser 实现
   获取来自请求头 content-type 是 conte application/json 和
@@ -14,14 +15,22 @@ router.post('/', (ctx, next) => {
 
   const { username, password } = ctx.request.body;
 
-  if (username === "jelly" && password === "123") {
-    const token = JWT.generate({ username, password }, "1d");
+  try {
 
-    ctx.set("authorization", token);
-    ctx.body = { ok: 1 };
-  } else {
-    ctx.body = { ok: 0 };
+    const userInfo = await UserModel.findOne({ username, password });
+
+    if (userInfo) {
+      const { _id: id } = userInfo;
+      const token = JWT.generate({ username, password }, "1d");
+
+      ctx.set("authorization", token);
+      ctx.body = { code: 1, data: { username, id } };
+    } else {
+      ctx.body = { code: 401, data: null };
+    }
+  } catch (error) {
+    ctx.body = { code: 0, data: error };
   }
-})
+});
 
-module.exports = router
+module.exports = router;

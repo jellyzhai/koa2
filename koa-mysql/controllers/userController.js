@@ -28,6 +28,8 @@ const UserController = {
   update: async (ctx, next) => {
     let { filename } = ctx.request.file || {};
     const avatar = filename ? `/uploads/${filename}` : "";
+
+    const { id } = ctx.params;
     const { username, password, age, classes } = ctx.request.body;
     const sql = "update students set username=?, password=?, age=?, classes=?";
 
@@ -35,8 +37,8 @@ const UserController = {
       await promisePool.query(
         avatar ? sql + ", avatar=? where id=?" : sql + " where id=?",
         avatar
-          ? [username, password, age, classes, avatar, ctx.params.id]
-          : [username, password, age, classes, ctx.params.id]
+          ? [username, password, age, classes, avatar, id]
+          : [username, password, age, classes, id]
       );
 
       ctx.body = { code: 1 };

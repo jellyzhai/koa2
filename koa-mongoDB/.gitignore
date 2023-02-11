@@ -1,6 +1,9 @@
 # dbs
 db
 
+# uploads
+koa-mongoDB/public/uploads/*
+
 # Logs
 logs
 *.log

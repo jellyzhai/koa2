@@ -119,10 +119,6 @@
             <th>用户名</th>
             <th>密码</th>
             <th>年龄</th>
-            <th>班级</th>
-            <th>语文</th>
-            <th>数学</th>
-            <th>英语</th>
             <th>头像</th>
             <th>操作</th>
         </thead>
@@ -156,7 +152,6 @@
                     密码：<input type="password" name="password" id="password" />
                 </div>
                 <div>年龄：<input type="number" name="age" id="age" /></div>
-                <div>班级：<input type="number" name="classes" id="classes" /></div>
                 <div>头像：<input type="file" name="avatar" id="avatar" /></div>
             </form>
 
@@ -230,10 +225,6 @@
                             <td>${item.username}</td>
                             <td>${item.password}</td>
                             <td>${item.age}</td>
-                            <td>${item.classes}</td>
-                            <td>${item.chinese}</td>
-                            <td>${item.math}</td>
-                            <td>${item.english}</td>
                             <td><img src='${item.avatar}' width='60px' /></td>
                             <td>
                                 <button data-id="${item.id}" data-username="${item.username}"
@@ -274,12 +265,12 @@
             openModal(true);
             updatedID = btn.dataset.id;
             updatedName = btn.dataset.username;
+
             var updatedData = userData.find(item => item.id == updatedID);
 
             formEle.username.value = updatedData.username;
             formEle.password.value = updatedData.password;
             formEle.age.value = updatedData.age;
-            formEle.classes.value = updatedData.classes;
         }
 
         function deleteFun(btn) {

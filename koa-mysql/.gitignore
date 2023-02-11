@@ -1,3 +1,6 @@
+# uploads
+koa-mysql/public/uploads/*
+
 # Logs
 logs
 *.log

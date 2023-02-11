@@ -40,9 +40,11 @@ app.use(session({
 // 通过 token 信息，统一判断登录状态
 // 调用 next 时，需要等待 next 返回的promise 执行完成后，再继续执行当前函数
 app.use(async (ctx, next) => {
-  if (ctx.url.includes('login')) {
+  if (
+    ["/registry", "/login", "/api/login", "/api/registry"].includes(ctx.url)
+  ) {
     await next();
-    return
+    return;
   }
 
   const token = ctx.headers.authorization

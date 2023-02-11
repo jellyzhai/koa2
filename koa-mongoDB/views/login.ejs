@@ -3,7 +3,6 @@
 
 <head>
     <title>登录</title>
-    <link rel="stylesheet" href="/css/style.css">
     <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
 </head>
 
@@ -14,35 +13,33 @@
         <div>用户名：<input type="text" id="username" /></div>
         <div>密码：<input type="password" id="password" /></div>
         <div>
-            <button id="postLogin">登录</button>
+            <button id="login">登录</button>
+            <a href="/registry.html" target="_self">注册</a>
         </div>
     </div>
 
     <script>
         const usernameDom = document.querySelector("#username");
         const passwordDom = document.querySelector("#password");
-        const postLoginDom = document.querySelector("#postLogin");
+        const loginDom = document.querySelector("#login");
 
-        postLoginDom.onclick = () => {
+        loginDom.onclick = () => {
             axios
                 .post("/api/login", {
                     username: usernameDom.value,
                     password: passwordDom.value,
                 })
                 .then((res) => {
-                    if (res.data.ok === 1) {
-                        const token = res.headers.authorization
-                        console.log('axios response: ', res);
-
-                        localStorage.setItem('authorization', token)
-                        location.assign('/home.html');
+                    if (res.data.code === 1) {
+                        localStorage.setItem('register', JSON.stringify(res.data.data))
+                        localStorage.setItem('authorization', res.headers.authorization)
+                        location.assign("/user_list.html");
                     } else {
                         alert("用户名或密码不存在");
                     }
                 })
                 .catch(err => {
-                    alert('登录失败')
-                    console.log(err);
+                    alert(`登录失败: ${err.message}`)
                 });
         };
     </script>
