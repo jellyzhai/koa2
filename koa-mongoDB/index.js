@@ -5,6 +5,9 @@ const Router = require("koa-router");
 const bodyParser = require('koa-bodyparser')
 const session = require('koa-session-minimal')
 
+// 启动 websocket 服务器
+require('./ws_server')
+
 // 连接 mongo 数据库
 require('./config/db_config')
 
@@ -41,7 +44,7 @@ app.use(session({
 // 调用 next 时，需要等待 next 返回的promise 执行完成后，再继续执行当前函数
 app.use(async (ctx, next) => {
   if (
-    ["/registry", "/login", "/api/login", "/api/registry"].includes(ctx.url)
+    ['/', "/registry", "/login", "/api/login", "/api/registry"].includes(ctx.url)
   ) {
     await next();
     return;
@@ -64,11 +67,10 @@ app.use(async (ctx, next) => {
       ctx.set("authorization", newToken);
       await next();
     } else {
-      ctx.status = 401;
-      ctx.body = {ok: 0};
+      ctx.body = {code: 401};
     }
   } else {
-    ctx.redirect('/login')
+    ctx.body = { code: 401 };
   }
 })
 
