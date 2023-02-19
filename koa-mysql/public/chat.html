@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>聊天室</title>
+    <style lang="">
+        * {
+            box-sizing: border-box;
+        }
+
+        ul,
+        li {
+            list-style: none;
+        }
+
+        .chat-box {
+            background: lavender;
+            width: 900px;
+            height: 500px;
+            display: flex;
+            padding: 10px;
+        }
+
+        .left-list {
+            background: lightgrey;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            width: 200px;
+        }
+
+        .right-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 10px;
+            background: #eee;
+        }
+
+        .top-title {
+            background: #ddd;
+            padding: 5px;
+            border-bottom: 1px solid #CCC;
+        }
+
+        .center-msg {
+            flex: 1;
+            background: #ddd;
+            overflow-y: auto;
+            padding: 5px;
+            position: relative;
+        }
+
+        .msg-input-box {
+            flex: 1;
+            position: relative;
+        }
+
+        .msg-input {
+            height: calc(100% - 25px);
+            background: #fff;
+            outline: none;
+            padding: 5px;
+        }
+
+        .send-btn {
+            position: absolute;
+            right: 0;
+        }
+
+        .users-title {
+            border-bottom: 1px solid #bbb;
+            padding: 5px 0;
+        }
+
+        .selected-item {
+            background: cadetblue;
+            color: white;
+        }
+
+        .right {
+            display: flex;
+            flex-direction: column;
+            align-items: end;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .accepted-msg {
+            width: max-content;
+            background: aliceblue;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .group-user,
+        .users-list>li {
+            cursor: pointer;
+        }
+
+        .group-user:hover,
+        .users-list>li:hover {
+            background-color: cadetblue;
+        }
+
+        .tip-circle {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #dd533d;
+            border-radius: 50%;
+        }
+    </style>
+    <script src="js/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h2>欢迎<span id="userName"></span>来到YouChat聊天室</h2>
+    <div class="chat-box">
+        <div class="left-list">
+            <div class="users-title">在线联系人</div>
+            <li class="group-user" data-username="groupChat" onclick="changeChatUser(this)">群聊</li>
+            <div class="users-list"></div>
+        </div>
+        <div class="right-content">
+            <div class="top-title">-</div>
+            <div class="center-msg">左侧选择联系人进行聊天</div>
+            <div class="msg-input-box hidden">
+                <div contenteditable class="msg-input" onkeydown="onInputMsgChange(this)"></div>
+                <button class="send-btn" disabled onclick="sendMsg()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const centerMsgDom = document.querySelector('.center-msg')
+        const topTitleDom = document.querySelector('.top-title')
+        const groupUserDom = document.querySelector('.group-user')
+        const usersListDom = document.querySelector('.users-list')
+        const msgInputBoxDom = document.querySelector('.msg-input-box')
+        const msgInputDom = document.querySelector('.msg-input')
+        const sendBtnDom = document.querySelector('.send-btn')
+        const userNameDom = document.querySelector('#userName')
+
+        let username = ''
+        const register = localStorage.getItem('register');
+        if (register) {
+            userNameDom.innerText = JSON.parse(register).username
+            username = userNameDom.innerText
+        }
+
+        const token = localStorage.getItem("authorization");
+        const socket = io(`ws://127.0.0.1:3000?token=${token}`)
+
+        const acceptedMsgMap = new Map();
+        const inputMsgMap = new Map();
+
+
+        const notAuthorize = "401";
+        const serverName = "server";
+        const groupChat = "groupChat";
+        const selectedUserClassName = 'selected-item';
+        let onlineUsers = [];
+        let selectUser = '';
+        let inputMsg = '';
+
+        function createMsg(toUser, data) {
+            return {
+                toUser,
+                data,
+            };
+        }
+
+        socket.on(notAuthorize, () => {
+            alert('登录已失效，请重新登录！')
+            localStorage.removeItem('token')
+            location.assign('/login')
+        })
+
+        socket.on('listMessage', (res) => {
+            const { data: users } = res
+            onlineUsers.forEach(user => {
+                if (!users.includes(user)) {
+                    acceptedMsgMap.delete(user)
+                }
+            })
+
+            if (!users.includes(selectUser)) {
+                selectUser = groupChat
+                setUserSelectedStatus(groupUserDom)
+                changeTile()
+                let contentEle = acceptedMsgMap.get(groupChat)
+                centerMsgDom.innerHTML = contentEle ?? '暂未收到消息';
+            }
+            onlineUsers = users;
+
+            showUsers(users)
+        })
+
+        socket.on('groupMessage', (data) => {
+            generateContentEle(data)
+        })
+
+        socket.on('singleMessage', (data) => {
+            generateContentEle(data)
+        })
+
+
+        function showUsers(users) {
+            const usersUlDom = document.querySelector('.users-list');
+
+            const lisEle = users.map(user => `<li data-username=${user} onclick="changeChatUser(this)">${user}</li>`).join('')
+            usersUlDom.innerHTML = lisEle
+        }
+
+        function generateContentEle(res) {
+            let contentEle = ''
+            const { fromUser, toUser, data } = res
+
+            if (fromUser === username) {
+                return
+            }
+
+
+            if (toUser === groupChat) {
+                contentEle = acceptedMsgMap.get(groupChat)
+            } else {
+                contentEle = acceptedMsgMap.get(fromUser)
+            }
+            const newMsgEle = `
+                <li>
+                    <span>${fromUser}</span>
+                    <div class='accepted-msg'>${data}</div>
+                </li>
+            `;
+
+            if (!contentEle) {
+                contentEle = newMsgEle
+            } else {
+                contentEle += newMsgEle
+            }
+
+            if (toUser === groupChat) {
+                acceptedMsgMap.set(groupChat, contentEle)
+            } else {
+                acceptedMsgMap.set(fromUser, contentEle)
+            }
+            showChatContent()
+            promptMsgTo(fromUser, toUser)
+        }
+
+        function promptMsgTo(fromUser, toUser) {
+            if (selectUser === fromUser || toUser === groupChat) {
+                return;
+            }
+
+            const liListDom = usersListDom.querySelectorAll('li')
+
+            let promptMsgUserDom = [...liListDom].find(element => element.dataset.username === fromUser);
+
+            if (!promptMsgUserDom) {
+                promptMsgUserDom = groupUserDom
+            }
+
+            const existedTipCircleDom = promptMsgUserDom.querySelector('.tip-circle')
+
+            if (!existedTipCircleDom) {
+                promptMsgUserDom.innerHTML = promptMsgUserDom.innerHTML + '<span class="tip-circle"></span>'
+            }
+        }
+
+        function showChatContent() {
+            let contentEle = acceptedMsgMap.get(selectUser)
+            centerMsgDom.innerHTML = contentEle ?? '暂未收到消息';
+        }
+
+        function changeChatUser(userDom) {
+            selectUser = userDom.dataset.username;
+            const tipCircleDom = userDom.querySelector('.tip-circle')
+
+            msgInputBoxDom.classList.remove('hidden')
+            const selectUserInputMsg = inputMsgMap.get(selectUser) ?? ''
+            msgInputDom.innerText = selectUserInputMsg;
+
+            if (tipCircleDom) {
+                tipCircleDom.classList.remove('tip-circle')
+            }
+
+            clearUserSelectedStatus()
+            setUserSelectedStatus(userDom)
+            changeTile()
+            showChatContent();
+        }
+
+        function changeTile() {
+            topTitleDom.innerHTML = selectUser === groupChat ? '群聊' : selectUser;
+        }
+
+        function clearUserSelectedStatus() {
+            const liListDom = usersListDom.querySelectorAll('li')
+            groupUserDom.classList.remove(selectedUserClassName);
+
+            [...liListDom].forEach(element => {
+                element.classList.remove(selectedUserClassName);
+            });
+        }
+
+        function setUserSelectedStatus(element) {
+            element.classList.add(selectedUserClassName)
+        }
+
+        function onInputMsgChange(msgInput) {
+            setTimeout(() => {
+                inputMsg = msgInput.textContent;
+
+                if (selectUser) {
+                    inputMsgMap.set(selectUser, inputMsg)
+                }
+
+                if (!inputMsg) {
+                    sendBtnDom.setAttribute('disabled', true)
+                } else {
+                    sendBtnDom.removeAttribute('disabled')
+                }
+            });
+        }
+
+        function sendMsg() {
+            inputMsg = inputMsgMap.get(selectUser)
+            if (!inputMsg) {
+                return
+            }
+
+            if (selectUser == groupChat) {
+                socket.emit('groupMessage', createMsg(selectUser, inputMsg))
+            } else {
+                socket.emit('singleMessage', createMsg(selectUser, inputMsg))
+            }
+
+            msgInputDom.innerText = ''
+            inputMsgMap.set(selectUser, '')
+            sendBtnDom.setAttribute('disabled', true)
+
+            let contentEle = acceptedMsgMap.get(selectUser)
+            const newMsgEle = `
+                <li class="right">
+                    <span>我</span>
+                    <div class='accepted-msg'>${inputMsg}</div>
+                </li>
+            `;
+
+            if (!contentEle) {
+                contentEle = newMsgEle
+            } else {
+                contentEle += newMsgEle
+            }
+            acceptedMsgMap.set(selectUser, contentEle)
+            showChatContent()
+        }
+    </script>
+</body>
+
+</html>

@@ -3,6 +3,7 @@ const Koa = require('koa')
 const static = require('koa-static')
 const Router = require("koa-router");
 const bodyParser = require('koa-bodyparser')
+const startSocketIoServer = require('./ws_server')
 
 // 连接 mysql 数据库
 require('./db/pool')
@@ -29,7 +30,7 @@ app.use(views(path.join(__dirname, "views"), {extension: 'ejs'}));
 // 调用 next 时，需要等待 next 返回的promise 执行完成后，再继续执行当前函数
 app.use(async (ctx, next) => {
   if (
-    ["/registry", "/login", "/api/login", "/api/registry"].includes(ctx.url)
+    ['/', "/registry", "/login", "/api/login", "/api/registry"].includes(ctx.url)
   ) {
     await next();
     return;
@@ -50,6 +51,7 @@ app.use(async (ctx, next) => {
       );
 
       ctx.set("authorization", newToken);
+      ctx.set("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
       await next();
     } else {
       ctx.body = {code: 401, data: null};
@@ -79,6 +81,8 @@ app.use(router.routes()).use(router.allowedMethods());
     ctx.body = 'hello world.'
 }) */
 
-app.listen(3000, () => {
+startSocketIoServer(app);
+
+/* app.listen(3000, () => {
   console.log("http://127.0.0.1:3000 启动成功");
-});
+}); */
